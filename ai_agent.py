@@ -1,6 +1,15 @@
 from openai import OpenAI
+from flask import Flask, request, jsonify
+import os
 
-# Initialize the OpenAI client
+# Initialize Flask app
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Hello, Render!"
+
+# Initialize OpenAI client
 client = OpenAI(api_key="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")
 
 # Product data (simplified for now)
@@ -20,10 +29,16 @@ def ask_ai(question):
     )
     return response.choices[0].message.content
 
-# Test the AI
-while True:
-    user_input = input("You: ")
-    if user_input.lower() in ["exit", "quit"]:
-        break
+# API endpoint for the chatbot
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message')
+    if not user_input:
+        return jsonify({"error": "No message provided"}), 400
     response = ask_ai(user_input)
-    print("AI: ", response)
+    return jsonify({"response": response})
+
+# Run the app
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
