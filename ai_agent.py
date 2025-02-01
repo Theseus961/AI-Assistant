@@ -1,6 +1,5 @@
 from openai import OpenAI
 from flask import Flask, request, jsonify
-import os
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -20,25 +19,39 @@ products = [
 
 # Function to handle user queries
 def ask_ai(question):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful AI support agent for a fitness product company."},
-            {"role": "user", "content": question}
-        ]
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat_completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful AI support agent for a fitness product company."},
+                {"role": "user", "content": question}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error in OpenAI API: {e}")
+        return "There was an error processing your request."
 
 # API endpoint for the chatbot
 @app.route('/chat', methods=['POST'])
 def chat():
-    user_input = request.json.get('message')
-    if not user_input:
-        return jsonify({"error": "No message provided"}), 400
-    response = ask_ai(user_input)
-    return jsonify({"response": response})
+    try:
+        # Get user input from the JSON body
+        user_input = request.json.get('message')
+        
+        # Check if the input is valid
+        if not user_input:
+            return jsonify({"error": "No message provided"}), 400
+        
+        # Call the AI function to get a response
+        response = ask_ai(user_input)
+        
+        # Return the response as JSON
+        return jsonify({"response": response})
+    except Exception as e:
+        print(f"Error in /chat endpoint: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 # Run the app
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5000)
