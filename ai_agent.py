@@ -4,8 +4,12 @@ from flask import Flask, request, jsonify
 # Initialize Flask app
 app = Flask(__name__)
 
+@app.route("/")
+def home():
+    return "Hello, Render!"
+
 # Initialize OpenAI client
-client = OpenAI(api_key="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")
+client = OpenAI(api_key="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")
 
 # Product data (simplified for now)
 products = [
@@ -15,28 +19,38 @@ products = [
 
 # Function to handle user queries
 def ask_ai(question):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful AI support agent for a fitness product company."},
-            {"role": "user", "content": question}
-        ]
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat_completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful AI support agent for a fitness product company."},
+                {"role": "user", "content": question}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error in OpenAI API: {e}")
+        return "There was an error processing your request."
 
 # API endpoint for the chatbot
 @app.route('/chat', methods=['POST'])
 def chat():
-    user_input = request.json.get('message')
-    if not user_input:
-        return jsonify({"error": "No message provided"}), 400
-    response = ask_ai(user_input)
-    return jsonify({"response": response})
-
-# Root endpoint to check if the app is running
-@app.route('/')
-def home():
-    return "AI Support Agent is running!"
+    try:
+        # Get user input from the JSON body
+        user_input = request.json.get('message')
+        
+        # Check if the input is valid
+        if not user_input:
+            return jsonify({"error": "No message provided"}), 400
+        
+        # Call the AI function to get a response
+        response = ask_ai(user_input)
+        
+        # Return the response as JSON
+        return jsonify({"response": response})
+    except Exception as e:
+        print(f"Error in /chat endpoint: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 # Run the app
 if __name__ == '__main__':
